@@ -1,0 +1,150 @@
+{
+    "ebv":{
+        "kind":"parameter",
+        "value":0.0,
+        "class":"parameter",
+        "inputs":[
+            "transient"
+        ],
+        "latex":"E({\\rm B} - {\\rm V})"
+    },
+    "nhhost":{
+        "kind":"parameter",
+        "value":1.0e18,
+        "class":"parameter",
+        "latex":"n_{\\rm H,host}",
+        "derived_keys":"avhost"
+    },
+    "rvhost": {
+        "kind": "parameter",
+        "value": 3.1,
+        "class": "parameter",
+        "latex": "R_{V,\\rm host}"
+    },
+    "texplosion":{
+        "kind":"parameter",
+        "value":0.0,
+        "class":"parameter",
+        "latex":"t_{\\rm exp}\\,{\\rm (days)}",
+        "requests":{
+            "min_times": "transient"
+        }
+    },
+    "eta_vel":{
+        "kind":"parameter",
+        "value":0.0,
+        "class":"parameter",
+        "latex":"\\eta_{\\rm vel}"
+    },
+    "min_vel":{
+        "kind":"parameter",
+        "value":1.5E7,
+        "class":"parameter",
+        "latex":"\\rm vel_{\\rm min}"
+    },
+    "del_vel":{
+        "kind":"parameter",
+        "value":8.0E8,
+        "class":"parameter",
+        "latex":"\\Delta~{\\rm vel}"
+    },
+    "eta_ni":{
+        "kind":"parameter",
+        "value":0.5,
+        "class":"parameter",
+        "latex":"\\eta_{\\rm ni}"
+    },
+    "eta_he":{
+        "kind":"parameter",
+        "value":0.5,
+        "class":"parameter",
+        "latex":"\\eta_{\\rm he}"
+    },
+    "eta_op":{
+        "kind":"parameter",
+        "value":0.5,
+        "class":"parameter",
+        "latex":"\\eta_{\\rm op}"
+    },
+    "m_ni":{
+        "kind":"parameter",
+        "value":9.0E30,
+        "class":"parameter",
+        "latex":"m_{\\rm ni}"
+    },
+    "m_he":{
+        "kind":"parameter",
+        "value":5.5E31,
+        "class":"parameter",
+        "latex":"m_{\\rm he}"
+    },
+    "m_op":{
+        "kind":"parameter",
+        "value":1.5E31,
+        "class":"parameter",
+        "latex":"m_{\\rm op}"
+    },
+    "rest_times":{
+        "kind":"transform",
+        "class":"RestTimes",
+        "inputs":[
+            "alltimes",
+            "texplosion",
+            "redshift"
+        ]
+    },
+    "blank":{
+        "kind":"engine",
+        "inputs":[
+            "densetimes",
+            "rest_times"
+        ]
+    },
+    "sampson":{
+        "kind":"sed",
+        "class":"Sampson",
+        "inputs":[
+            "densetimes",
+            "rest_times",
+            "eta_vel",
+            "min_vel",
+            "del_vel",
+            "eta_ni",
+            "eta_he",
+            "eta_op",
+            "m_ni",
+            "m_he",
+            "m_op",
+            "texplosion",
+            "redshift",
+            "blank"
+        ],
+        "requests":{
+            "band_wave_ranges":"photometry"
+        }
+    },
+    "losextinction":{
+        "kind":"sed",
+        "inputs":[
+            "sampson",
+            "nhhost",
+            "rvhost",
+            "ebv"
+        ],
+        "requests":{
+            "band_wave_ranges": "photometry"
+        }
+    },
+    "photometry":{
+        "kind":"observable",
+        "supports":[
+            "ultraviolet",
+            "optical",
+            "infrared"
+        ],
+        "inputs":[
+            "losextinction",
+            "lumdist"
+        ]
+    }
+}

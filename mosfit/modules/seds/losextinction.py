@@ -67,10 +67,11 @@ class LOSExtinction(SED):
 
     def process(self, **kwargs):
         """Process module."""
-        kwargs = self.prepare_input(self.key('luminosities'), **kwargs)
+        #kwargs = self.prepare_input(self.key('luminosities'), **kwargs)
         self.preprocess(**kwargs)
         zp1 = 1.0 + kwargs[self.key('redshift')]
         self._seds = kwargs[self.key('seds')]
+        #print("in losextinction, seds: "+str(self._seds))
         self._nh_host = kwargs[self.key('nhhost')]
         self._rv_host = kwargs[self.key('rvhost')]
         self._bands = kwargs['all_bands']
@@ -81,7 +82,10 @@ class LOSExtinction(SED):
         av_host = self._nh_host / 1.8e21
 
         extinct_cache = OrderedDict()
+        #print("in losextinction, self._bands has shape: "+str(self._bands.shape))
+        #print("in losextinction, self._seds has shape: "+str(self._seds.shape)+"\n\n")
         for si, cur_band in enumerate(self._bands):
+            
             bi = self._band_indices[si]
             # Extinct out host gal (using rest wavelengths)
             if bi >= 0:
@@ -99,9 +103,12 @@ class LOSExtinction(SED):
                             self._nh_host,
                             self._band_rest_wavelengths[bi][ind])
                 # Add host and MW contributions
+                #print("trying to get seds at si = "+str(si))
                 eapp(
                     self._mw_extinct[bi] + extinct_cache[bi],
                     self._seds[si], inplace=True)
+                
+
             else:
                 # wavelengths = np.array(
                 #   [c.c.cgs.value / self._frequencies[si]])

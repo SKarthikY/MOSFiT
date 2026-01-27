@@ -46,6 +46,10 @@ class Blackbody(SED):
         rest_wavs_dict = {}
         evaled = False
 
+        print("\nin blackbody, shape of sample_wavelengths: "+str(self._sample_wavelengths.shape))
+        print("in blackbody, shape of self._times: "+str(self._times.shape))
+        print("in blackbody, shape of self._luminosities: "+str(self._luminosities.shape))
+        #print("in blackbody, self._luminosities: "+str(self._luminosities))
         for li, lum in enumerate(self._luminosities):
             bi = self._band_indices[li]
             if lum == 0.0:
@@ -79,9 +83,13 @@ class Blackbody(SED):
         seds = self.add_to_existing_seds(seds, **kwargs)
 
         # Units of `seds` is ergs / s / Angstrom.
-        return {
+        
+        tor = {
             'sample_wavelengths': self._sample_wavelengths,
-            self.key('seds'): seds,
+            self.key('seds'): np.asarray(seds),
             'luminosities_out': self._luminosities,
             'times_out': self._times
         }
+
+        
+        return tor
