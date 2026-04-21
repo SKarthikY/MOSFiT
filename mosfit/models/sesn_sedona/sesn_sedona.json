@@ -25,10 +25,7 @@
         "kind":"parameter",
         "value":0.0,
         "class":"parameter",
-        "latex":"t_{\\rm exp}\\,{\\rm (days)}",
-        "requests":{
-            "min_times": "transient"
-        }
+        "latex":"t_{\\rm exp}\\,{\\rm (days)}"
     },
     "eta_vel":{
         "kind":"parameter",
@@ -38,15 +35,15 @@
     },
     "min_vel":{
         "kind":"parameter",
-        "value":1.5E7,
+        "value":1.5E2,
         "class":"parameter",
-        "latex":"\\rm vel_{\\rm min}"
+        "latex":"\\rm vel_{\\rm min},({\\rm 100 km\\,s}^{-1})"
     },
     "del_vel":{
         "kind":"parameter",
-        "value":8.0E8,
+        "value":8.0E3,
         "class":"parameter",
-        "latex":"\\Delta~{\\rm vel}"
+        "latex":"\\Delta~{\\rm vel},({\\rm 100 km\\,s}^{-1})"
     },
     "eta_ni":{
         "kind":"parameter",
@@ -68,36 +65,27 @@
     },
     "m_ni":{
         "kind":"parameter",
-        "value":9.0E30,
+        "value":0.0045,
         "class":"parameter",
-        "latex":"m_{\\rm ni}"
+        "latex":"m_{\\rm ni},(M_\\odot)"
     },
     "m_he":{
         "kind":"parameter",
-        "value":5.5E31,
+        "value":0.028,
         "class":"parameter",
-        "latex":"m_{\\rm he}"
+        "latex":"m_{\\rm he},(M_\\odot)"
     },
     "m_op":{
         "kind":"parameter",
-        "value":1.5E31,
+        "value":0.0075,
         "class":"parameter",
-        "latex":"m_{\\rm op}"
-    },
-    "rest_times":{
-        "kind":"transform",
-        "class":"RestTimes",
-        "inputs":[
-            "alltimes",
-            "texplosion",
-            "redshift"
-        ]
+        "latex":"m_{\\rm op},(M_\\odot)"
     },
     "blank":{
         "kind":"engine",
         "inputs":[
             "densetimes",
-            "rest_times"
+            "texplosion"
         ]
     },
     "sampson":{
@@ -105,7 +93,6 @@
         "class":"Sampson",
         "inputs":[
             "densetimes",
-            "rest_times",
             "eta_vel",
             "min_vel",
             "del_vel",

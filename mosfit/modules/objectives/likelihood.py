@@ -33,40 +33,75 @@ class Likelihood(Module):
         if not self._fractions:
             return ret
 
-        self._model_observations = kwargs['model_observations']
+        # Model predictions and upper-limit flags
+        self._model_observations = np.asarray(kwargs['model_observations'])
         self._score_modifier = kwargs.get(self.key('score_modifier'), 0.0)
-        self._upper_limits = np.array(kwargs.get('upperlimits', []),
-                                      dtype=bool)
+        self._upper_limits = np.array(
+            kwargs.get('upperlimits', []),
+            dtype=bool
+        )
+
+        # NEW: per-point validity mask from upstream (Sampson→Photometry)
+        valid_mask = kwargs.get('valid_mask', None)
+            
+
+
+        if valid_mask is not None:
+            #print("DEBUG Likelihood: N_used =", np.count_nonzero(valid_mask))
+            valid_mask = np.asarray(valid_mask, dtype=bool)
+            if valid_mask.shape == self._model_observations.shape:
+                # Strict: if no valid points, give a very bad finite score.
+                if not np.any(valid_mask):
+                    return ret
+                # Apply mask to model_obs and upper_limits
+                self._model_observations = self._model_observations[valid_mask]
+                if self._upper_limits.size:
+                    self._upper_limits = self._upper_limits[valid_mask]
+            else:
+                # shape mismatch: ignore mask
+                valid_mask = None
 
         value = ret['value']
 
+        # Basic sanity on fractions
         if min(self._fractions) < 0.0 or max(self._fractions) > 1.0:
             return ret
+
+        # Check for NaNs in model where we have non-upper-limit points
         for oi, obs in enumerate(self._model_observations):
-            if not self._upper_limits[oi] and (isnan(obs) or
-                                               not np.isfinite(obs)):
+            if (not self._upper_limits.size or not self._upper_limits[oi]) \
+               and (isnan(obs) or not np.isfinite(obs)):
                 return ret
 
+        # Covariance diagonal and residuals (1D arrays aligned with data)
         diag = kwargs.get('kdiagonal', None)
         residuals = kwargs.get('kresiduals', None)
 
         if diag is None or residuals is None:
             return ret
 
+        diag = np.asarray(diag)
+        residuals = np.asarray(residuals)
+
+        # Apply mask to diag and residuals as well
+        if valid_mask is not None and valid_mask.shape == diag.shape:
+            diag = diag[valid_mask]
+            residuals = residuals[valid_mask]
+            if not np.any(diag.shape) or not np.any(residuals.shape):
+                return ret  # no usable points
+
+        # Full covariance matrix case
         if kwargs.get('kmat', None) is not None:
-            kmat = kwargs['kmat']
+            kmat = np.asarray(kwargs['kmat'])
+
+            # Apply mask to the covariance matrix: select rows/cols
+            if valid_mask is not None and kmat.shape[0] == valid_mask.shape[0]:
+                if not np.any(valid_mask):
+                    return ret
+                kmat = kmat[np.ix_(valid_mask, valid_mask)]
 
             # Add observed errors to diagonal
             kmat[np.diag_indices_from(kmat)] += diag
-
-            # full_size = np.count_nonzero(kmat)
-
-            # Remove small covariance terms
-            # min_cov = self.MIN_COV_TERM * np.max(kmat)
-            # kmat[kmat <= min_cov] = 0.0
-
-            # print("Sparse frac: {:.2%}".format(
-            #     float(full_size - np.count_nonzero(kmat)) / full_size))
 
             condn = np.linalg.cond(kmat)
             if condn > 1.0e10:
@@ -80,15 +115,20 @@ class Likelihood(Module):
                     self._use_cpu = True
                     if not self._cuda_reported:
                         self._printer.message(
-                            'cuda_not_enabled', master_only=True, warning=True)
+                            'cuda_not_enabled',
+                            master_only=True,
+                            warning=True
+                        )
                 else:
                     self._use_cpu = False
                     if not self._cuda_reported:
-                        self._printer.message('cuda_enabled', master_only=True)
+                        self._printer.message(
+                            'cuda_enabled',
+                            master_only=True
+                        )
                         self._cuda_reported = True
 
                     kmat_gpu = gpuarray.to_gpu(kmat)
-                    # kmat will now contain the cholesky decomp.
                     skla.cholesky(kmat_gpu, lib='cusolver')
                     value = -np.log(skla.det(kmat_gpu, lib='cusolver'))
                     res_gpu = gpuarray.to_gpu(residuals.reshape(
@@ -101,37 +141,56 @@ class Likelihood(Module):
 
             if self._use_cpu:
                 try:
-                    chol_kmat = scipy.linalg.cholesky(kmat, check_finite=False)
+                    import scipy
+                    chol_kmat = scipy.linalg.cholesky(
+                        kmat,
+                        check_finite=False
+                    )
 
                     value = -np.linalg.slogdet(chol_kmat)[-1]
                     value -= 0.5 * (
-                        np.matmul(residuals.T, scipy.linalg.cho_solve(
-                            (chol_kmat, False), residuals,
-                            check_finite=False)))
+                        np.matmul(
+                            residuals.T,
+                            scipy.linalg.cho_solve(
+                                (chol_kmat, False),
+                                residuals,
+                                check_finite=False
+                            )
+                        )
+                    )
                 except Exception:
                     try:
+                        import scipy
                         value = -0.5 * (
                             np.matmul(
                                 np.matmul(
-                                    residuals.T, scipy.linalg.inv(kmat)),
-                                residuals) + np.log(scipy.linalg.det(kmat)))
+                                    residuals.T, scipy.linalg.inv(kmat)
+                                ),
+                                residuals
+                            ) + np.log(scipy.linalg.det(kmat))
+                        )
                     except scipy.linalg.LinAlgError:
                         return ret
 
             ret['kdiagonal'] = diag
             ret['kresiduals'] = residuals
+
         elif 'kfmat' in kwargs:
             raise RuntimeError('Should not have kfmat in likelihood!')
+
         else:
             # Shortcut when matrix is diagonal.
-            self._o_band_vs = kwargs['obandvs']
-            # print('likelihood')
-            # print(np.sqrt(diag))
-            # print(self._o_band_vs)
-            # print(residuals)
+            self._o_band_vs = np.asarray(kwargs['obandvs'])
+
+            # Apply mask to variances as well
+            if valid_mask is not None and valid_mask.shape == self._o_band_vs.shape:
+                self._o_band_vs = self._o_band_vs[valid_mask]
+
+            # diag and residuals already masked above
             value = -0.5 * np.sum(
                 residuals ** 2 / (self._o_band_vs ** 2 + diag) +
-                np.log(self._o_band_vs ** 2 + diag))
+                np.log(self._o_band_vs ** 2 + diag)
+            )
 
         score = self._score_modifier + value
         if isnan(score) or not np.isfinite(score):

@@ -9,16 +9,16 @@
         "max_value":1
     },
     "texplosion":{
-        "min_value":-500.0,
-        "max_value":0.0
+        "min_value": -20.0,
+        "max_value": 0.0
     },
     "min_vel":{
-        "min_value":1.5E7,
-        "max_value":3.0E8
+        "min_value":1.5,
+        "max_value":3.0E1
     },
     "del_vel":{
-        "min_value":8.0E8,
-        "max_value":3.5e9
+        "min_value":8.0E1,
+        "max_value":3.5e2
     },
     "eta_ni":{
         "min_value":0,
@@ -33,16 +33,16 @@
         "max_value":1
     },
     "m_ni":{
-        "min_value":8.0E30,
-        "max_value":5.0E32
+        "min_value":4.0E-3,
+        "max_value":2.5E-1
     },
     "m_he":{
-        "min_value":5.0E31,
-        "max_value":2.0E33
+        "min_value":2.5E-2,
+        "max_value":1.0
     },
     "m_op":{
-        "min_value":1.2E31,
-        "max_value":1.6E34
+        "min_value":6.0E-3,
+        "max_value":7.5
     },
     "variance":{
         "min_value":1.0e-3,

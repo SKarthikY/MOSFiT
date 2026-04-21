@@ -479,11 +479,32 @@ class Photometry(Module):
             self._observation_types == 'magnitude',
             self._observation_types == 'magcount')
         cbs = self._observation_types == 'magcount'
+
+
         model_observations[nbs] = eff_fluxes[nbs] / self._dist_const
         model_observations[ybs] = self.abmag(eff_fluxes[ybs], offsets[ybs])
         model_observations[cbs] = 10.0 ** (-0.4 * (model_observations[
             cbs] - self._zps[cbs]))
-        return {'model_observations': model_observations}
+
+        # Get the per-point mask from Sampson, if present
+        valid_mask = kwargs.get("sesn_valid_mask") 
+        '''
+        print(f"DEBUG photometry: sesn_valid_mask present = {valid_mask is not None}")
+        if valid_mask is not None:
+            print(f"DEBUG photometry: valid fraction = {np.mean(valid_mask):.2%}")'''
+        if valid_mask is None:
+            valid_mask = np.ones(len(model_observations), dtype=bool)
+        else:
+            valid_mask = np.asarray(valid_mask, dtype=bool)
+        
+        if not np.all(valid_mask):
+            model_observations[~valid_mask] = self._observed[~valid_mask]
+
+        return {
+            'model_observations': model_observations,
+            # forward mask so outputs can see it
+            'valid_mask': valid_mask,
+        }
 
     def average_wavelengths(self, indices=None):
         """Return average wavelengths for specified band indices."""

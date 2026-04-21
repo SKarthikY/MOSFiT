@@ -46,9 +46,6 @@ class Blackbody(SED):
         rest_wavs_dict = {}
         evaled = False
 
-        print("\nin blackbody, shape of sample_wavelengths: "+str(self._sample_wavelengths.shape))
-        print("in blackbody, shape of self._times: "+str(self._times.shape))
-        print("in blackbody, shape of self._luminosities: "+str(self._luminosities.shape))
         #print("in blackbody, self._luminosities: "+str(self._luminosities))
         for li, lum in enumerate(self._luminosities):
             bi = self._band_indices[li]

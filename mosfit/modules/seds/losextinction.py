@@ -119,7 +119,8 @@ class LOSExtinction(SED):
         return {
             'sample_wavelengths': self._sample_wavelengths,
             self.key('seds'): self._seds,
-            self.key('avhost'): av_host
+            self.key('avhost'): av_host,
+            'sesn_valid_mask': kwargs.get('sesn_valid_mask'),  # ← forward it
         }
 
     def preprocess(self, **kwargs):
